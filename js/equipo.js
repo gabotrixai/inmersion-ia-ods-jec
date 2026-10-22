@@ -52,18 +52,31 @@ function nivelSugerido() {
 const llaveOk = (n) => !!S.d.llaves?.[String(n)]?.ok;
 
 // ---------------------------------------------------------------- render
+// Los bloques con formularios solo se redibujan si cambió su "firma": así una actualización
+// en tiempo real nunca borra lo que el equipo está escribiendo.
+S.firmas = {};
+function siCambia(clave, firma, fn) { const f = JSON.stringify(firma); if (S.firmas[clave] !== f) { S.firmas[clave] = f; fn(); } }
+function firmaPanel() {
+  const n = S.nivelSel; const e = entregaNivel(n); const L = S.d.llaves?.[String(n)];
+  return [n, estadoNivel(n), L?.ok, L?.intentos, L?.bloqueado_hasta, S.d.jornada.niveles_abiertos, e?.created_at, e?.revisado_en, e?.feedback, e?.estado, n === 4 ? (S.d.lecturas || 0) >= 3 : null];
+}
 function render() {
   const { equipo: eq, jornada: j } = S.d;
   renderCabecera(eq, j);
   renderAnuncios(j);
   renderCircuito();
-  renderPanel();
-  renderVotacion(eq, j);
-  renderExtras();
-  renderCaos();
+  siCambia('panel', firmaPanel(), renderPanel);
+  actualizarLecturasPanel();
+  siCambia('votacion', [j.estado, S.votos, S.ranking.map((r) => r.id)], () => renderVotacion(eq, j));
+  siCambia('extras', [(S.d.entregas || []).filter((x) => x.tipo === 'extra').map((x) => [x.ref, x.estado, x.created_at]), !!entregaNivel(1)], renderExtras);
+  siCambia('caos', [(S.d.eventos || []).filter((x) => x.tipo === 'caos').map((x) => x.id), (S.d.entregas || []).filter((x) => x.tipo === 'caos').map((x) => [x.ref, x.estado, x.created_at])], renderCaos);
   renderLecturas();
   renderRanking();
   revisarCaosNuevo();
+}
+function actualizarLecturasPanel() {
+  const el = $('#n-lecturas'); if (!el) return;
+  el.textContent = S.d.lecturas || 0;
 }
 
 function renderCabecera(eq, j) {
@@ -117,7 +130,7 @@ function renderCircuito() {
       ${n.n !== 5 ? '<span class="traza"></span>' : ''}
     </button>`;
   }).join('');
-  $$('#circuito .nodo').forEach((b) => (b.onclick = () => { S.nivelSel = +b.dataset.n; renderCircuito(); renderPanel(); $('#panel').scrollIntoView({ behavior: 'smooth', block: 'start' }); }));
+  $$('#circuito .nodo').forEach((b) => (b.onclick = () => { S.nivelSel = +b.dataset.n; S.bloques = null; renderCircuito(); siCambia('panel', firmaPanel(), renderPanel); $('#panel').scrollIntoView({ behavior: 'smooth', block: 'start' }); }));
 }
 
 // ---------------------------------------------------------------- panel de nivel
@@ -328,7 +341,7 @@ function formConnect(c) {
     </div>
     <div class="card" style="background:var(--panel-2);border-color:${ok ? 'var(--lima-profundo)' : '#6b5600'}">
       <h3 style="margin:0">${ico(ok ? 'check' : 'alert')} Señal del dispositivo</h3>
-      <div class="num" style="font-family:var(--display);font-size:2.4rem;font-weight:800;color:${ok ? 'var(--lima)' : 'var(--amarillo)'}">${n} <span style="font-size:1rem;color:var(--texto-suave)">lecturas</span></div>
+      <div class="num" style="font-family:var(--display);font-size:2.4rem;font-weight:800;color:${ok ? 'var(--lima)' : 'var(--amarillo)'}"><span id="n-lecturas">${n}</span> <span style="font-size:1rem;color:var(--texto-suave)">lecturas</span></div>
       <p class="ayuda">${ok ? 'Señal suficiente. Ahora la app.' : 'El sistema exige mínimo 3 lecturas reales antes de aceptar la entrega.'}</p>
       <div class="ayuda">Las lecturas aparecen abajo en «Datos del dispositivo» en tiempo real.</div>
     </div>
@@ -380,13 +393,13 @@ function enlazarPanel(n) {
         if (r.ok) { beep('ok'); toast(`${ico('unlock')} Llave descifrada. Acceso concedido.`); }
         else if (r.bloqueado) { beep('err'); toast(`Bloqueado ${r.segundos} s`, 'aviso'); }
         else { beep('err'); toast(`Respuesta incorrecta. Espera ${r.segundos} s para volver a intentar.`, 'error'); }
-        await cargar();
+        S.firmas.panel = null; await cargar();
       } catch (ex) { toast(ex.message, 'error'); }
     };
     $('#btn-pista') && ($('#btn-pista').onclick = () => $('#pista').classList.toggle('oculto'));
     const L = S.d.llaves?.[String(n)];
     if (L?.bloqueado_hasta && new Date(L.bloqueado_hasta) > Date.now()) {
-      const it = setInterval(() => { const s = Math.ceil((new Date(L.bloqueado_hasta) - Date.now()) / 1000); const el = $('#llave-estado'); if (!el) return clearInterval(it); if (s <= 0) { clearInterval(it); renderPanel(); } else el.textContent = `Bloqueado ${s} s por intento fallido`; }, 500);
+      const it = setInterval(() => { const s = Math.ceil((new Date(L.bloqueado_hasta) - Date.now()) / 1000); const el = $('#llave-estado'); if (!el) return clearInterval(it); if (s <= 0) { clearInterval(it); S.firmas.panel = null; siCambia('panel', firmaPanel(), renderPanel); } else el.textContent = `Bloqueado ${s} s por intento fallido`; }, 500);
     }
   }
   $$('[data-copiar]').forEach((b) => (b.onclick = () => copiar(b.dataset.copiar)));
@@ -443,7 +456,7 @@ function enlazarPanel(n) {
       const btn = f.querySelector('button[type=submit]'); btn.disabled = true;
       await rpc('equipo_entregar', { p_codigo: CODIGO, p_tipo: 'nivel', p_nivel: n, p_ref: null, p_contenido: c });
       beep('ok'); toast(`${ico('send')} Entrega enviada. El control la revisa en vivo.`); if (n === 2) S.bloques = null;
-      await cargar();
+      S.firmas.panel = null; await cargar();
     } catch (ex) { err.textContent = ex.message; beep('err'); const btn = f.querySelector('button[type=submit]'); if (btn) btn.disabled = false; }
   };
 }
@@ -470,7 +483,7 @@ function renderExtras() {
     }).join('')}</div></div>`;
   $$('[data-extra]').forEach((f) => (f.onsubmit = async (e) => {
     e.preventDefault(); const x = EXTRAS.find((y) => y.clave === f.dataset.extra);
-    try { await rpc('equipo_entregar', { p_codigo: CODIGO, p_tipo: 'extra', p_nivel: null, p_ref: x.clave, p_contenido: { titulo: x.titulo, xp_sugerido: x.xp, respuesta: f.respuesta.value.trim() } }); beep('ok'); toast('Misión enviada al control.'); await cargar(); }
+    try { await rpc('equipo_entregar', { p_codigo: CODIGO, p_tipo: 'extra', p_nivel: null, p_ref: x.clave, p_contenido: { titulo: x.titulo, xp_sugerido: x.xp, respuesta: f.respuesta.value.trim() } }); beep('ok'); toast('Misión enviada al control.'); S.firmas.extras = null; await cargar(); }
     catch (ex) { toast(ex.message, 'error'); }
   }));
 }
@@ -494,7 +507,7 @@ function renderCaos() {
     }).join('')}</div></div>`;
   $$('[data-caos]').forEach((f) => (f.onsubmit = async (e) => {
     e.preventDefault(); const ev = eventosCaos().find((y) => y.id === f.dataset.caos);
-    try { await rpc('equipo_entregar', { p_codigo: CODIGO, p_tipo: 'caos', p_nivel: null, p_ref: ev.id, p_contenido: { titulo: ev.titulo, xp_sugerido: ev.payload?.xp || 40, respuesta: f.respuesta.value.trim() } }); beep('ok'); toast('Respuesta enviada.'); $('#overlay').innerHTML = ''; await cargar(); }
+    try { await rpc('equipo_entregar', { p_codigo: CODIGO, p_tipo: 'caos', p_nivel: null, p_ref: ev.id, p_contenido: { titulo: ev.titulo, xp_sugerido: ev.payload?.xp || 40, respuesta: f.respuesta.value.trim() } }); beep('ok'); toast('Respuesta enviada.'); $('#overlay').innerHTML = ''; S.firmas.caos = null; await cargar(); }
     catch (ex) { toast(ex.message, 'error'); }
   }));
 }
@@ -563,7 +576,7 @@ function renderVotacion(eq, j) {
         <select data-cat="${k}"><option value="">— elegir —</option>${otros.map((o) => `<option value="${o.id}" ${v?.votado_id === o.id ? 'selected' : ''}>${esc(o.nombre)}</option>`).join('')}</select>
         ${v ? '<div class="ayuda lima" style="margin-top:6px">Voto registrado</div>' : ''}</div>`;
     }).join('')}</div></div>`;
-  $$('[data-cat]').forEach((s) => (s.onchange = async () => { if (!s.value) return; try { await rpc('votar', { p_codigo: CODIGO, p_votado: s.value, p_categoria: s.dataset.cat }); beep('ok'); toast('Voto registrado'); await cargar(); } catch (ex) { toast(ex.message, 'error'); } }));
+  $$('[data-cat]').forEach((s) => (s.onchange = async () => { if (!s.value) return; try { await rpc('votar', { p_codigo: CODIGO, p_votado: s.value, p_categoria: s.dataset.cat }); beep('ok'); toast('Voto registrado'); S.firmas.votacion = null; await cargar(); } catch (ex) { toast(ex.message, 'error'); } }));
 }
 
 // ---------------------------------------------------------------- arranque
@@ -580,7 +593,7 @@ function renderVotacion(eq, j) {
       const a = [1, 2, 3, 4, 5].filter((n) => (antes.entregas || []).find((x) => x.tipo === 'nivel' && x.nivel === n)?.estado !== 'aprobada' && aprobado(n));
       if (a.length) { beep('ok'); toast(`${ico('check')} ¡Nivel ${a[0]} aprobado! +${entregaNivel(a[0]).xp_otorgado} XP`); }
       const r = [1, 2, 3, 4, 5].filter((n) => (antes.entregas || []).find((x) => x.tipo === 'nivel' && x.nivel === n)?.estado !== 'rechazada' && entregaNivel(n)?.estado === 'rechazada');
-      if (r.length) { beep('err'); toast(`${ico('alert')} El control devolvió el nivel ${r[0]}. Revisen el comentario.`, 'aviso'); S.nivelSel = r[0]; renderCircuito(); renderPanel(); }
+      if (r.length) { beep('err'); toast(`${ico('alert')} El control devolvió el nivel ${r[0]}. Revisen el comentario.`, 'aviso'); S.nivelSel = r[0]; S.bloques = null; renderCircuito(); siCambia('panel', firmaPanel(), renderPanel); }
       if ((S.d.lecturas || 0) > (antes.lecturas || 0) && (antes.lecturas || 0) === 0) { beep('ok'); toast(`${ico('wifi')} ¡Primera señal del dispositivo recibida! +50 XP`); }
     }
   });

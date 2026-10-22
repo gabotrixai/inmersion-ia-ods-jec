@@ -56,9 +56,28 @@ const eq = (id) => J.equipos.find((e) => e.id === id) || { nombre: '¿?', emblem
 const pendientes = () => J.entregas.filter((x) => x.estado === 'pendiente');
 
 // ---------------------------------------------------------------- render
+// La cabecera se redibuja siempre; el contenido de la pestaña solo si cambió su "firma",
+// para que una actualización en tiempo real no borre una rúbrica o un comentario a medio escribir.
+J.firmas = {};
+const TABS = { control: tabControl, entregas: tabEntregas, equipos: tabEquipos, cierre: tabCierre, exportar: tabExportar };
+function firmaTab() {
+  const j = J.jornada;
+  if (J.tab === 'control') return [j.estado, j.niveles_abiertos, j.timer_label, j.config, J.eventos.slice(0, 8).map((e) => e.id), J.equipos.map((e) => e.id)];
+  if (J.tab === 'equipos') return J.equipos.map((e) => [e.id, e.xp, e.nivel_actual, e.reto_clave, (J.lecturas[e.id] || []).length]);
+  if (J.tab === 'cierre') return [j.estado, J.votos.length, J.ranking.map((r) => [r.id, r.total])];
+  if (J.tab === 'exportar') return [J.equipos.length, J.entregas.length];
+  return [J.verHist, J.entregas.filter((x) => x.estado !== 'pendiente').map((x) => [x.id, x.estado, x.revisado_en])];
+}
 function render() {
+  if (!$('#cab')) { $('#app').innerHTML = '<div id="cab"></div><div id="tab"></div>'; J.firmas = {}; }
+  renderCabecera();
+  if (J.tab === 'entregas' && $('#pend')) actualizarEntregas();
+  const f = JSON.stringify([J.tab, firmaTab()]);
+  if (J.firmas.tab !== f) { J.firmas.tab = f; if (J.tab !== 'entregas' || !$('#pend')) TABS[J.tab](); else tabEntregasHistorial(); }
+}
+function renderCabecera() {
   const j = J.jornada; const estados = { lobby: 'Lobby', en_juego: 'En juego', votacion: 'Votación', cerrada: 'Cerrada' };
-  $('#app').innerHTML = `
+  $('#cab').innerHTML = `
   <div class="card" style="padding:16px 22px">
     <div class="fila espacio">
       <div class="fila" style="gap:16px">
@@ -76,16 +95,14 @@ function render() {
   </div>
   <div class="tabs" style="margin-top:18px">
     ${[['control', 'Control'], ['entregas', `Entregas${pendientes().length ? `<span class="n">${pendientes().length}</span>` : ''}`], ['equipos', 'Equipos'], ['cierre', 'Votación y cierre'], ['exportar', 'Evidencias']].map(([k, t]) => `<button class="tab ${J.tab === k ? 'activo' : ''}" data-tab="${k}">${t}</button>`).join('')}
-  </div>
-  <div id="tab"></div>`;
+  </div>`;
   $('#salir').onclick = () => { sesion.juez = null; location.reload(); };
-  $$('.tab').forEach((b) => (b.onclick = () => { J.tab = b.dataset.tab; render(); }));
+  $$('.tab').forEach((b) => (b.onclick = () => { J.tab = b.dataset.tab; J.firmas.tab = null; render(); }));
   clearInterval(J.timer); J.timer = iniciarTimer(() => J.jornada.timer_fin, $('#timer'));
-  ({ control: tabControl, entregas: tabEntregas, equipos: tabEquipos, cierre: tabCierre, exportar: tabExportar })[J.tab]();
 }
 
 // ---------------------------------------------------------------- control
-async function set(cambios, msg) { try { J.jornada = await rpc('juez_set', { ...auth(), p_cambios: cambios }); if (msg) toast(msg); await cargar(); } catch (ex) { toast(ex.message, 'error'); } }
+async function set(cambios, msg) { try { J.jornada = await rpc('juez_set', { ...auth(), p_cambios: cambios }); if (msg) toast(msg); J.firmas.tab = null; await cargar(); } catch (ex) { toast(ex.message, 'error'); } }
 
 function tabControl() {
   const j = J.jornada; const ab = j.niveles_abiertos || [];
@@ -153,14 +170,32 @@ function tabControl() {
 
 // ---------------------------------------------------------------- entregas
 function tabEntregas() {
-  const pend = pendientes(); const hist = J.entregas.filter((x) => x.estado !== 'pendiente');
+  const pend = pendientes();
   $('#tab').innerHTML = `
-    <div class="fila espacio" style="margin-bottom:12px"><h3 style="margin:0">${ico('send')} Por revisar (${pend.length})</h3><span class="ayuda">Las más antiguas primero. Rúbrica 0–10 por criterio: suma hasta 50 puntos extra.</span></div>
-    <div class="grid" style="gap:14px" id="pend">${pend.slice().reverse().map(cardEntrega).join('') || '<div class="card ayuda">Nada pendiente. Buen momento para lanzar un evento caos o recorrer las mesas.</div>'}</div>
-    <div class="fila espacio" style="margin:24px 0 12px"><h3 style="margin:0">Historial (${hist.length})</h3><button class="btn chico" id="tg-hist">${J.verHist ? 'Ocultar' : 'Mostrar'}</button></div>
+    <div class="fila espacio" style="margin-bottom:12px"><h3 style="margin:0">${ico('send')} Por revisar (<span id="n-pend">${pend.length}</span>)</h3><span class="ayuda">Las más antiguas primero. Rúbrica 0–10 por criterio: suma hasta 50 puntos extra.</span></div>
+    <div class="grid" style="gap:14px" id="pend">${pend.slice().reverse().map(cardEntrega).join('')}<div class="card ayuda" id="sin-pend" ${pend.length ? 'style="display:none"' : ''}>Nada pendiente. Buen momento para lanzar un evento caos o recorrer las mesas.</div></div>
+    <div id="hist-wrap"></div>`;
+  enlazarEntregas($('#pend'));
+  tabEntregasHistorial();
+}
+function tabEntregasHistorial() {
+  const hist = J.entregas.filter((x) => x.estado !== 'pendiente'); const w = $('#hist-wrap'); if (!w) return;
+  w.innerHTML = `<div class="fila espacio" style="margin:24px 0 12px"><h3 style="margin:0">Historial (${hist.length})</h3><button class="btn chico" id="tg-hist">${J.verHist ? 'Ocultar' : 'Mostrar'}</button></div>
     <div class="grid" style="gap:10px" id="hist">${J.verHist ? hist.map(cardEntrega).join('') : ''}</div>`;
-  $('#tg-hist').onclick = () => { J.verHist = !J.verHist; tabEntregas(); };
-  enlazarEntregas();
+  $('#tg-hist').onclick = () => { J.verHist = !J.verHist; J.firmas.tab = null; render(); };
+  enlazarEntregas(w);
+}
+// Diferencial: agrega tarjetas nuevas y quita las ya revisadas sin tocar las que el jurado está evaluando.
+function actualizarEntregas() {
+  const pend = pendientes(); const cont = $('#pend'); const ids = new Set(pend.map((x) => x.id));
+  $$('.entrega-card', cont).forEach((c) => { if (!ids.has(c.dataset.id)) c.remove(); });
+  pend.slice().reverse().forEach((e) => {
+    if ($(`.entrega-card[data-id="${e.id}"]`, cont)) return;
+    const tmp = document.createElement('div'); tmp.innerHTML = cardEntrega(e); const card = tmp.firstElementChild;
+    cont.insertBefore(card, $('#sin-pend')); enlazarEntregas(card.parentElement, card);
+  });
+  $('#sin-pend').style.display = pend.length ? 'none' : '';
+  const n = $('#n-pend'); if (n) n.textContent = pend.length;
 }
 
 function contenidoHTML(e) {
@@ -200,8 +235,8 @@ function cardEntrega(e) {
   </div>`;
 }
 
-function enlazarEntregas() {
-  $$('.entrega-card').forEach((card) => {
+function enlazarEntregas(raiz = document, solo = null) {
+  (solo ? [solo] : $$('.entrega-card', raiz)).forEach((card) => {
     const id = card.dataset.id;
     const rangos = $$('[data-r]', card);
     const total = () => rangos.reduce((s, r) => s + +r.value, 0);
@@ -210,7 +245,7 @@ function enlazarEntregas() {
       const puntaje = rangos.length ? total() : +($('[data-puntaje]', card)?.value || 0);
       const fb = $('[data-fb]', card).value.trim();
       if (estado === 'rechazada' && !fb) return toast('Si devuelven, escriban qué corregir.', 'aviso');
-      try { await rpc('juez_revisar', { ...auth(), p_entrega: id, p_estado: estado, p_puntaje: estado === 'aprobada' ? puntaje : 0, p_feedback: fb || null }); beep(estado === 'aprobada' ? 'ok' : 'err'); toast(estado === 'aprobada' ? 'Aprobada' : 'Devuelta'); await cargar(); } catch (ex) { toast(ex.message, 'error'); }
+      try { await rpc('juez_revisar', { ...auth(), p_entrega: id, p_estado: estado, p_puntaje: estado === 'aprobada' ? puntaje : 0, p_feedback: fb || null }); beep(estado === 'aprobada' ? 'ok' : 'err'); toast(estado === 'aprobada' ? 'Aprobada' : 'Devuelta'); J.firmas.tab = null; await cargar(); } catch (ex) { toast(ex.message, 'error'); }
     };
     $('[data-ok]', card).onclick = () => revisar('aprobada');
     $('[data-no]', card).onclick = () => revisar('rechazada');
