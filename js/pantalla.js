@@ -62,7 +62,7 @@ function juego() {
     <span class="eyebrow">Ranking en vivo</span>
     <div class="grid" style="gap:8px;overflow:auto">${P.ranking.slice(0, 10).map((r, i) => `
       <div class="rank-fila ${i < 3 ? 'top' : ''}"><div class="pos">${i + 1}</div>
-        <div class="fila" style="gap:12px">${emblemaHTML(r.emblema, r.color)}<div><b style="font-size:1.15rem">${esc(r.nombre)}</b><div class="ayuda">${esc(retoPorClave(r.reto_clave)?.titulo || 'sin problema elegido')} · ${r.votos ? r.votos + ' votos' : ''}</div></div></div>
+        <div class="fila" style="gap:12px">${emblemaHTML(r.emblema, r.color)}<div><b style="font-size:1.15rem">${esc(r.nombre)}</b><div class="ayuda">${esc(retoPorClave(r.reto_clave)?.titulo || 'sin problema elegido')}${r.votos ? ' · ' + r.votos + ' votos' : ''}</div></div></div>
         <div class="pts" style="font-size:1.5rem">${r.total}</div></div>`).join('') || '<div class="ayuda">Aún no hay equipos.</div>'}</div>
     ${P.j.estado === 'votacion' ? `<div class="callout" style="margin-top:12px"><b>Votación abierta.</b> Cada equipo vota en su consola por 3 categorías. ${P.votos.length} votos emitidos.</div>` : ''}
   </div>
