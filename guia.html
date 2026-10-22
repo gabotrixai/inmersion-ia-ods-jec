@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Guía del facilitador · Circuito ODS</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23A9C719'><path d='M13 2 3 14h9l-1 8 10-12h-9l1-8z'/></svg>">
+<link rel="stylesheet" href="css/estilo.css">
+<style>
+  .salon { width: 100%; height: auto; font-family: var(--mono); }
+  .salon text { fill: var(--texto); font-size: 11px; }
+  .salon .zona { fill: var(--panel); stroke: var(--borde-fuerte); stroke-width: 1.5; rx: 10; }
+  .salon .zona.lima { stroke: var(--lima); }
+  .salon .mesa { fill: var(--panel-2); stroke: var(--borde-fuerte); }
+  .salon .tit { font-family: var(--display); font-weight: 800; font-size: 13px; fill: var(--lima); }
+  .salon .sub { fill: var(--texto-suave); font-size: 9.5px; }
+  .salon .flujo { stroke: var(--lima); stroke-width: 2; stroke-dasharray: 6 5; fill: none; opacity: .8; }
+  .tarjeta-nivel { border-top: 4px solid var(--lima); }
+  @media print { .salon .zona { fill: #fff; } .salon text { fill: #111; } .salon .sub { fill: #555; } .salon .tit { fill: #7E9400; } }
+</style>
+</head>
+<body>
+<header id="barra"></header>
+<main class="contenedor" style="padding:40px 0">
+  <div class="fila espacio">
+    <div><span class="eyebrow">Guía del facilitador</span><h1 style="font-size:clamp(1.8rem,4vw,3rem)">Cómo se juega el <span class="resaltado">Circuito</span></h1></div>
+    <button class="btn no-print" onclick="window.print()">Imprimir guía</button>
+  </div>
+  <p class="suave" style="max-width:760px">Jornada de 4 horas por grupo, dos sesiones espejo. Equipos de 4. El problema es real; la solución la inventan. Esta guía reemplaza el modelo de "estaciones rotativas + reto preasignado" de la propuesta por un circuito de niveles con compuertas: los equipos no pueden avanzar hasta que el control valide, lo que estira la actividad a las 4 horas con tensión constante en lugar de llenarla con exposición.</p>
+
+  <!-- POR QUÉ CIRCUITOS -->
+  <section class="grid g3" style="margin-top:22px">
+    <div class="card"><h3>El problema que resuelve</h3><p class="suave">Los grupos terminan en 2 horas porque las actividades son lineales y fáciles de "cumplir". Aquí cada nivel tiene tres frenos: una llave (acertijo), una entrega con rúbrica y una validación humana en la mesa. Devolver una entrega es normal y esperado.</p></div>
+    <div class="card"><h3>Tres compuertas por nivel</h3><ul style="padding-left:18px;color:var(--texto-suave);margin:0;line-height:1.7"><li><b>Llave</b>: acertijo (binario, lógica, cifrado, redes, ODS). Fallar bloquea 20 s × intento.</li><li><b>Entrega</b>: formulario concreto; vago = devuelto.</li><li><b>Control</b>: un monitor pasa por la mesa, mira, pregunta y aprueba desde el celular.</li></ul></div>
+    <div class="card"><h3>Válvulas para ajustar el ritmo</h3><ul style="padding-left:18px;color:var(--texto-suave);margin:0;line-height:1.7"><li>Niveles se abren por fase (no todos al inicio).</li><li>Eventos <b>caos</b> para equipos adelantados.</li><li>9 misiones extra mientras esperan validación.</li><li>Niveles 3 y 4 en paralelo: el equipo se divide y rota.</li></ul></div>
+  </section>
+
+  <!-- AGENDA -->
+  <section style="margin-top:36px">
+    <span class="eyebrow">Agenda de 4 horas</span>
+    <h2>Minuto a minuto</h2>
+    <div class="grid g2" style="align-items:start">
+      <div class="agenda" id="agenda"></div>
+      <div class="card">
+        <h3>Guion de apertura (15 min)</h3>
+        <ol style="padding-left:18px;color:var(--texto-suave);line-height:1.7">
+          <li><b>Gancho (2 min):</b> "Hace 9 años, una noche de lluvia, Manizales perdió 17 personas en deslizamientos. Nadie tenía un dato a tiempo. Hoy ustedes van a construir el sistema que faltó… o el de otro problema real de Colombia."</li>
+          <li><b>Reglas (3 min):</b> pantalla con las reglas. Insistir: "El control puede devolver. No es castigo, es el juego."</li>
+          <li><b>Premios (1 min):</b> "Hay premios para los mejores equipos. Cuántos y cuáles: información clasificada hasta el cierre."</li>
+          <li><b>Registro (6 min):</b> código de la jornada en pantalla; cada equipo se registra desde un celular, nombre, emblema y 4 roles.</li>
+          <li><b>Arranque (3 min):</b> botón "0:15 · Nivel 1" en Control. Cuenta regresiva en pantalla. ¡Van!</li>
+        </ol>
+        <h3 style="margin-top:16px">Frases del control</h3>
+        <ul style="padding-left:18px;color:var(--texto-suave);line-height:1.7">
+          <li>"¿A quién exactamente? Nombre, lugar, cuántos." (nivel 1)</li><li>"Si el sensor marca 31 %, ¿qué pasa?" (nivel 2)</li><li>"Señálenme dónde entra el dato en la maqueta." (nivel 3)</li><li>"Muéstrenme la lectura cambiando en vivo." (nivel 4)</li><li>"Cronómetro: 60 segundos. Todos hablan." (nivel 5)</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- SALÓN -->
+  <section style="margin-top:36px">
+    <span class="eyebrow">Distribución del salón</span>
+    <h2>Islas de equipo + 5 zonas de circuito</h2>
+    <p class="suave" style="max-width:760px">Los equipos trabajan en su isla (mesa propia) y se desplazan a las zonas para tomar materiales y pedir validación. El control recorre las islas; la mesa de control está junto a la pantalla. Para 8 equipos (32 estudiantes) se necesita un salón de ~80 m² con mesas movibles.</p>
+    <div class="card" style="padding:12px">
+      <svg class="salon" viewBox="0 0 1000 560" xmlns="http://www.w3.org/2000/svg">
+        <!-- paredes -->
+        <rect x="10" y="10" width="980" height="540" rx="14" fill="none" stroke="var(--borde-fuerte)" stroke-width="2"/>
+        <!-- escenario / pantalla -->
+        <rect class="zona lima" x="30" y="30" width="420" height="80"/>
+        <text class="tit" x="46" y="56">ZONA PITCH · Escenario + pantalla (videobeam)</text>
+        <text class="sub" x="46" y="74">Pantalla con ranking, cronómetro y eventos. Apertura, caos en vivo, demo day. Micrófono si hay.</text>
+        <text class="sub" x="46" y="90">Marcas en el piso: 4 posiciones para que todo el equipo hable.</text>
+        <!-- mesa de control -->
+        <rect class="zona lima" x="470" y="30" width="200" height="80"/>
+        <text class="tit" x="486" y="56">MESA DE CONTROL</text>
+        <text class="sub" x="486" y="74">Tallerista líder + portátil (panel Control).</text>
+        <text class="sub" x="486" y="90">Lanza fases, caos y anuncios. Ve entregas.</text>
+        <!-- zona scan -->
+        <rect class="zona" x="690" y="30" width="280" height="80"/>
+        <text class="tit" x="706" y="56">ZONA SCAN · Muro de problemas</text>
+        <text class="sub" x="706" y="74">18 carteles ODS con el dato clave y QR a la consola.</text>
+        <text class="sub" x="706" y="90">Post-its: "¿a quién afecta aquí?"</text>
+        <!-- islas -->
+        <g id="islas"></g>
+        <!-- zona map -->
+        <rect class="zona" x="30" y="440" width="300" height="90"/>
+        <text class="tit" x="46" y="466">ZONA MAP · Mesa de bloques</text>
+        <text class="sub" x="46" y="484">Tarjetas físicas ENTRADA / PROCESO / DECISIÓN / SALIDA, marcadores,</text>
+        <text class="sub" x="46" y="498">papel grande. El equipo arma el flujo en papel y luego lo digita.</text>
+        <text class="sub" x="46" y="514">Monitor 1 valida aquí los niveles 1 y 2.</text>
+        <!-- zona build -->
+        <rect class="zona" x="350" y="440" width="300" height="90"/>
+        <text class="tit" x="366" y="466">ZONA BUILD · Materiales</text>
+        <text class="sub" x="366" y="484">LEGO por bandejas, cartón, plastilina, tapas, cinta, tijeras,</text>
+        <text class="sub" x="366" y="498">etiquetas ENTRADA/PROCESO/SALIDA. Buena luz para la foto.</text>
+        <text class="sub" x="366" y="514">Monitor 2 valida el nivel 3 en la isla del equipo.</text>
+        <!-- zona connect -->
+        <rect class="zona lima" x="670" y="440" width="300" height="90"/>
+        <text class="tit" x="686" y="466">ZONA CONNECT · Hardware</text>
+        <text class="sub" x="686" y="484">XIAO ESP32S3 Sense + sensores Grove, cables USB-C de datos,</text>
+        <text class="sub" x="686" y="498">portátiles con Chrome/Edge + Arduino IDE, vasos con tierra seca/húmeda/agua,</text>
+        <text class="sub" x="686" y="514">regleta, hotspot de respaldo. Monitor 3 (técnico) valida el nivel 4.</text>
+        <!-- flujo -->
+        <path class="flujo" d="M830 115 C 830 160, 180 160, 180 435"/>
+        <path class="flujo" d="M330 485 C 340 470, 345 470, 350 485"/>
+        <path class="flujo" d="M650 485 C 660 470, 665 470, 670 485"/>
+        <path class="flujo" d="M820 435 C 820 300, 240 300, 240 115"/>
+        <text class="sub" x="470" y="300" text-anchor="middle" style="fill:var(--lima)">SCAN → MAP → BUILD ‖ CONNECT → PITCH</text>
+      </svg>
+    </div>
+    <div class="grid g3" style="margin-top:14px">
+      <div class="card"><h3>Equipo humano (por sesión)</h3><ul style="padding-left:18px;color:var(--texto-suave);margin:0;line-height:1.7"><li>1 tallerista líder (mesa de control, pantalla, ritmo).</li><li>3 monitores validadores con celular: MAP (niveles 1-2), BUILD (3), CONNECT (4, perfil técnico).</li><li>1 coordinación logística + registro audiovisual.</li><li>Jurado del pitch: líder + 1 invitado de Confa.</li></ul></div>
+      <div class="card"><h3>Por qué islas y no rotación</h3><p class="suave" style="margin:0">Rotar por estaciones hace que todos lleguen al mismo tiempo al mismo lugar y luego sobre tiempo. Con islas, cada equipo va a su ritmo, el cuello de botella se gestiona con la cola de entregas y los adelantados reciben caos y misiones extra. El movimiento sigue existiendo: para materiales y para validaciones.</p></div>
+      <div class="card"><h3>Dimensionamiento</h3><table style="font-size:.86rem"><tr><td>Estudiantes</td><td class="mono">24 · 32 · 40</td></tr><tr><td>Equipos</td><td class="mono">6 · 8 · 10</td></tr><tr><td>XIAO + sensor</td><td class="mono">1 por equipo + 2 de repuesto</td></tr><tr><td>Portátiles Chrome/Edge</td><td class="mono">1 por equipo</td></tr><tr><td>Celulares</td><td class="mono">1-2 por equipo (consola)</td></tr><tr><td>Monitores</td><td class="mono">3 · 3 · 4</td></tr></table></div>
+    </div>
+  </section>
+
+  <!-- NIVELES -->
+  <section style="margin-top:36px">
+    <span class="eyebrow">Qué valida el control en cada nivel</span>
+    <h2>Rúbricas (0-10 por criterio, hasta +50 XP)</h2>
+    <div class="grid g2" id="niveles-guia"></div>
+  </section>
+
+  <!-- MATERIALES -->
+  <section style="margin-top:36px">
+    <span class="eyebrow">Lista de verificación</span>
+    <h2>Materiales y alistamiento</h2>
+    <div class="grid g3">
+      <div class="card"><h3>Tecnología</h3><ul style="padding-left:18px;color:var(--texto-suave);margin:0;line-height:1.7"><li>XIAO ESP32S3 Sense (1 por equipo + repuestos), con firmware base ya cargado y probado en D-7.</li><li>Sensor Grove de humedad del suelo + cables.</li><li>Cables USB-C <b>de datos</b> probados uno a uno.</li><li>Portátiles con Chrome/Edge, Arduino IDE y soporte ESP32 instalado.</li><li>Hotspot 2,4 GHz de respaldo (la red institucional suele bloquear).</li><li>Videobeam + portátil del control con <code>pantalla.html</code> en pantalla completa.</li><li>Cuentas Lovable con créditos verificados para 2 sesiones.</li></ul></div>
+      <div class="card"><h3>Materiales físicos</h3><ul style="padding-left:18px;color:var(--texto-suave);margin:0;line-height:1.7"><li>LEGO en bandejas por equipo (o cartón, plastilina, reciclaje).</li><li>Etiquetas adhesivas ENTRADA / PROCESO / SALIDA.</li><li>Tarjetas grandes de bloques para la Zona MAP.</li><li>Carteles del muro de problemas (18) con QR a la consola.</li><li>Vasos con tierra seca, húmeda y agua.</li><li>Post-its, marcadores, cinta, tijeras, papel grande.</li><li>Escarapelas por rol (4 colores) y ficha de mesa con el código del equipo.</li></ul></div>
+      <div class="card"><h3>Antes de abrir la puerta</h3><ul style="padding-left:18px;color:var(--texto-suave);margin:0;line-height:1.7"><li>Crear la jornada en Control (una por grupo) y anotar el PIN.</li><li>Abrir <code>pantalla.html?j=CÓDIGO</code> en el videobeam.</li><li>Monitores con el panel Control abierto en el celular (código + PIN).</li><li>Probar un POST al webhook desde la página Hardware.</li><li>Registrar un equipo de prueba y eliminarlo.</li><li>Ventana de reinicio entre sesiones: nueva jornada, borrar modelos de los XIAO, recargar portátiles, reponer tierra y materiales.</li></ul></div>
+    </div>
+  </section>
+
+  <!-- PROTECCIÓN -->
+  <section style="margin-top:36px">
+    <div class="callout"><b>Datos y menores de edad.</b> La plataforma solo pide nombre de pila de los integrantes; no pide correos, documentos ni fotos de personas. Las fotos de la maqueta no deben incluir rostros. Las capturas de la cámara del XIAO se apuntan a objetos (suelo, plantas, residuos). Autorizaciones de imagen y tratamiento de datos (Ley 1581 de 2012) se gestionan por separado por Confa, según la sección 13 de la propuesta.</div>
+  </section>
+</main>
+<footer id="pie"></footer>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/datos.js"></script>
+<script src="js/comun.js"></script>
+<script>
+  pintarBarra('guia.html'); pintarPie();
+  $('#agenda').innerHTML = AGENDA.map((a) => `<div class="item"><div class="hora">${a.t} · ${a.dur} min · ${esc(a.fase)}</div><b>${esc(a.titulo)}</b><div class="suave" style="font-size:.9rem">${esc(a.desc)}</div></div>`).join('');
+  $('#niveles-guia').innerHTML = NIVELES.map((n) => `<div class="card tarjeta-nivel"><div class="fila espacio"><b>Nivel ${n.n} · ${n.codigo} · ${esc(n.titulo)}</b><span class="chip lima">+${n.xp} XP · ~${n.minutos} min</span></div><p class="suave" style="font-size:.9rem;margin:6px 0">${esc(n.objetivo)}</p><ol style="padding-left:18px;margin:0;color:var(--texto-suave);font-size:.9rem;line-height:1.6">${RUBRICA[n.n].map((c) => `<li>${esc(c)}</li>`).join('')}</ol><p class="ayuda" style="margin-top:8px">Entregable: ${esc(n.entregable)}</p></div>`).join('');
+  // Islas de equipo en el plano
+  const islas = []; const cols = 4, filas = 2; const x0 = 60, y0 = 150, w = 190, h = 100, gx = 40, gy = 50;
+  for (let f = 0; f < filas; f++) for (let c = 0; c < cols; c++) { const x = x0 + c * (w + gx), y = y0 + f * (h + gy); const n = f * cols + c + 1; islas.push(`<rect class="mesa" x="${x}" y="${y}" width="${w}" height="${h}" rx="10"/><text class="tit" x="${x + 12}" y="${y + 24}">ISLA ${n}</text><text class="sub" x="${x + 12}" y="${y + 42}">Mesa del equipo · 4 sillas</text><text class="sub" x="${x + 12}" y="${y + 56}">Portátil + celular + bandeja LEGO</text><text class="sub" x="${x + 12}" y="${y + 70}">Ficha con código · escarapelas por rol</text><text class="sub" x="${x + 12}" y="${y + 86}">Regleta · XIAO del equipo</text>`); }
+  $('#islas').innerHTML = islas.join('');
+</script>
+</body>
+</html>

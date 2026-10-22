@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Circuito ODS · Jornada de inmersión IA · Confa Educación</title>
+<meta name="description" content="Plataforma gamificada de la Jornada de Inmersión en IA de la Jornada Escolar Complementaria de Confa: 4 horas, 5 niveles, retos reales de Colombia alineados con los ODS.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23A9C719'><path d='M13 2 3 14h9l-1 8 10-12h-9l1-8z'/></svg>">
+<link rel="stylesheet" href="css/estilo.css">
+</head>
+<body>
+<header id="barra"></header>
+
+<main>
+  <!-- HERO -->
+  <section class="contenedor" style="padding:72px 0 40px">
+    <div class="grid" style="grid-template-columns: 1.2fr .8fr; gap:40px; align-items:center">
+      <div>
+        <span class="eyebrow">Confa Educación · JEC · Manizales, Caldas</span>
+        <h1><span class="glitch" data-texto="CIRCUITO">CIRCUITO</span><br><span class="resaltado">ODS</span></h1>
+        <p style="font-size:1.15rem; max-width:560px" class="suave">Cuatro horas. Cinco niveles. Un problema real de Colombia que tu equipo tiene que entender, mapear, construir, conectar y defender. Nadie te da la solución: ustedes la hackean.</p>
+        <div class="fila" style="margin-top:22px">
+          <a class="btn primario" href="#entrar">${ICONO_BOLT} Entrar con mi código</a>
+          <a class="btn" href="#registrar">Registrar equipo nuevo</a>
+          <a class="btn fantasma" href="guia.html">¿Cómo funciona?</a>
+        </div>
+        <div class="fila" style="margin-top:28px; gap:18px" id="stats">
+          <div class="stat"><div class="num">4 h</div><div class="lbl">de juego</div></div>
+          <div class="stat"><div class="num">5</div><div class="lbl">niveles</div></div>
+          <div class="stat"><div class="num" id="n-retos">18</div><div class="lbl">problemas reales</div></div>
+          <div class="stat"><div class="num">1</div><div class="lbl">solución: la de ustedes</div></div>
+        </div>
+      </div>
+      <div class="card oscura" style="font-family:var(--mono)">
+        <span class="esquina" style="top:-1px;left:-1px;border-width:2px 0 0 2px"></span>
+        <span class="esquina" style="bottom:-1px;right:-1px;border-width:0 2px 2px 0"></span>
+        <div class="terminal" style="border:none;background:transparent;padding:0">
+<pre><span class="prompt">confa@circuito-ods:~$</span> ./iniciar --jornada JEC
+<span class="com"># cargando problemas reales de Colombia...</span>
+<span class="ok">[OK]</span> 18 problemáticas · 17 ODS · 0 soluciones predefinidas
+<span class="ok">[OK]</span> webhook XIAO ESP32S3 Sense ....... activo
+<span class="ok">[OK]</span> sensores: cámara · humedad · micrófono
+<span class="warn">[!!]</span> nivel 4 exige señal real del dispositivo
+<span class="warn">[!!]</span> cada nivel está cifrado: descifra la llave
+<span class="com"># premios: hay. cuántos y cuáles: clasificado.</span>
+<span class="prompt">confa@circuito-ods:~$</span> <span class="cursor"></span></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- NIVELES -->
+  <section class="contenedor" style="padding:30px 0">
+    <span class="eyebrow">El circuito</span>
+    <h2>Cinco niveles. Para avanzar hay que pasar.</h2>
+    <p class="suave" style="max-width:700px">Cada nivel está cerrado con una llave (un acertijo de lógica, binario, cifrado o redes). Después de abrirla, el equipo trabaja en una zona del salón y envía su entrega. El control la revisa en vivo: si no cumple, la devuelve. Los niveles 3 y 4 se juegan en paralelo: el equipo se divide.</p>
+    <div id="niveles-home" class="grid g3" style="margin-top:22px"></div>
+  </section>
+
+  <!-- REGLAS -->
+  <section class="contenedor" style="padding:30px 0">
+    <div class="grid g2">
+      <div class="card">
+        <h3>${ICONO_SHIELD} Reglas del juego</h3>
+        <ul style="padding-left:18px; color:var(--texto-suave); line-height:1.7">
+          <li>Equipos de 4 con roles: Líder, Hardware, Software y Comunicador. Todos hacen algo en cada nivel.</li>
+          <li>El problema se escoge del muro (o se propone uno real propio). La solución la inventa el equipo.</li>
+          <li>Llave equivocada = espera obligatoria. Cada intento fallido suma más segundos.</li>
+          <li>El control puede devolver una entrega. Devolver no quita XP; mejorar y reenviar sí lo suma.</li>
+          <li>Los eventos <b>CAOS</b> llegan sin avisar: tienen pocos minutos para responder.</li>
+          <li>Las misiones extra se pueden hacer mientras esperan una validación.</li>
+          <li>Al final todos votan (no por su propio equipo) y el jurado decide. Hay premios para los mejores equipos.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>${ICONO_TROPHY} Cómo se gana XP</h3>
+        <table>
+          <tr><td>Registrar el equipo</td><td class="mono lima">+25</td></tr>
+          <tr><td>Llave al primer intento / segundo / después</td><td class="mono lima">+30 / +20 / +10</td></tr>
+          <tr><td>Nivel 1 · 2 · 3 · 4 · 5 aprobado</td><td class="mono lima">+100 · 150 · 200 · 250 · 300</td></tr>
+          <tr><td>Rúbrica del control por nivel</td><td class="mono lima">hasta +50</td></tr>
+          <tr><td>Primera señal del dispositivo · 10 lecturas · primera imagen</td><td class="mono lima">+50 · +30 · +40</td></tr>
+          <tr><td>Misiones extra y eventos caos</td><td class="mono lima">+30 a +80</td></tr>
+          <tr><td>Cada voto de otro equipo</td><td class="mono lima">+40</td></tr>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ENTRAR -->
+  <section id="entrar" class="estrecho" style="padding:50px 0 10px">
+    <div class="card lima-borde">
+      <span class="eyebrow">Acceso al sistema</span>
+      <h2>Entrar con el código del equipo</h2>
+      <p class="suave">El código de 6 caracteres lo recibieron al registrarse. Si lo perdieron, pídanselo al control.</p>
+      <form id="form-entrar">
+        <label for="cod">Código del equipo</label>
+        <input id="cod" class="codigo" type="text" maxlength="6" autocomplete="off" placeholder="XXXXXX" required>
+        <div id="err-entrar" class="error"></div>
+        <button class="btn primario bloque" style="margin-top:16px" type="submit">Abrir consola del equipo</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- REGISTRAR -->
+  <section id="registrar" class="estrecho" style="padding:30px 0">
+    <div class="card" id="card-registro">
+      <span class="eyebrow">Nuevo equipo</span>
+      <h2>Registrar equipo</h2>
+      <p class="suave">Necesitan el <b>código de la jornada</b> que está en la pantalla del salón.</p>
+      <form id="form-registro">
+        <label for="jcod">Código de la jornada</label>
+        <input id="jcod" class="codigo" type="text" maxlength="6" autocomplete="off" placeholder="XXXXXX" required>
+        <label for="nombre">Nombre del equipo</label>
+        <input id="nombre" type="text" maxlength="40" placeholder="Ej: Los Guardianes del Chinchiná" required>
+        <label>Emblema</label>
+        <div class="selector-emblemas" id="sel-emblemas"></div>
+        <label>Color</label>
+        <div class="selector-colores" id="sel-colores"></div>
+        <label>Integrantes y roles (4 personas, solo nombre de pila)</label>
+        <div id="integrantes" class="grid" style="gap:8px"></div>
+        <p class="ayuda">Los roles existen para que nadie se quede mirando. Pueden rotar entre niveles.</p>
+        <div id="err-registro" class="error"></div>
+        <button class="btn primario bloque" style="margin-top:16px" type="submit">Registrar y recibir código</button>
+      </form>
+    </div>
+    <div class="card lima-borde oculto" id="card-listo">
+      <span class="eyebrow">Equipo registrado</span>
+      <h2>Guarden este código</h2>
+      <p class="suave">Con él entran a la consola desde cualquier celular o computador del equipo. Anótenlo en la ficha de la mesa.</p>
+      <div class="terminal" style="text-align:center;padding:22px">
+        <div class="apagado" style="font-size:.7rem;letter-spacing:.2em">CÓDIGO DEL EQUIPO</div>
+        <div id="codigo-nuevo" style="font-size:2.6rem;letter-spacing:.4em;color:var(--lima);font-weight:700"></div>
+      </div>
+      <p class="ayuda" style="margin-top:12px">El token del dispositivo (para el XIAO) está dentro de la consola, en el nivel CONNECT.</p>
+      <a class="btn primario bloque" href="equipo.html" style="margin-top:12px">Abrir consola del equipo</a>
+    </div>
+  </section>
+
+  <!-- ACCESOS -->
+  <section class="contenedor" style="padding:40px 0">
+    <div class="grid g4">
+      <a class="card" href="pantalla.html" style="text-decoration:none;color:inherit"><h3>${ICONO_MONITOR} Pantalla</h3><p class="suave">Ranking en vivo, cronómetro, estado del circuito y eventos. Para el videobeam.</p></a>
+      <a class="card" href="juez.html" style="text-decoration:none;color:inherit"><h3>${ICONO_SETTINGS} Control</h3><p class="suave">Panel del facilitador y jurado: niveles, tiempos, validaciones, caos y votación.</p></a>
+      <a class="card" href="hardware.html" style="text-decoration:none;color:inherit"><h3>${ICONO_CPU} Hardware</h3><p class="suave">Firmware del XIAO ESP32S3 Sense, webhook y cómo leer los datos desde la app.</p></a>
+      <a class="card" href="guia.html" style="text-decoration:none;color:inherit"><h3>${ICONO_BOOK} Guía</h3><p class="suave">Agenda de 4 horas, distribución del salón, materiales y guion del facilitador.</p></a>
+    </div>
+  </section>
+</main>
+<footer id="pie"></footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/datos.js"></script>
+<script src="js/comun.js"></script>
+<script>
+  pintarBarra('index.html'); pintarPie();
+  // Reemplazo de marcadores de iconos en el HTML estático
+  document.body.innerHTML = document.body.innerHTML
+    .replace(/\$\{ICONO_BOLT\}/g, ico('bolt')).replace(/\$\{ICONO_SHIELD\}/g, ico('shield')).replace(/\$\{ICONO_TROPHY\}/g, ico('trophy'))
+    .replace(/\$\{ICONO_MONITOR\}/g, ico('monitor')).replace(/\$\{ICONO_SETTINGS\}/g, ico('settings')).replace(/\$\{ICONO_CPU\}/g, ico('cpu')).replace(/\$\{ICONO_BOOK\}/g, ico('book'));
+  $('#n-retos').textContent = RETOS.length;
+
+  // Niveles
+  const iconosNivel = { 1: 'eye', 2: 'map', 3: 'box', 4: 'wifi', 5: 'mic' };
+  $('#niveles-home').innerHTML = NIVELES.map((n) => `
+    <div class="card">
+      <div class="fila espacio"><span class="chip lima">${ico(iconosNivel[n.n])} NIVEL ${n.n} · ${n.codigo}</span><span class="chip">+${n.xp} XP</span></div>
+      <h3 style="margin-top:12px">${esc(n.titulo)}</h3>
+      <p class="suave" style="font-size:.92rem">${esc(n.resumen)}</p>
+      <div class="apagado mono" style="font-size:.72rem">${esc(n.zona)} · ~${n.minutos} min</div>
+    </div>`).join('');
+
+  // Entrar
+  $('#form-entrar').addEventListener('submit', async (e) => {
+    e.preventDefault(); const cod = $('#cod').value.trim().toUpperCase(); const err = $('#err-entrar'); err.textContent = '';
+    try { await rpc('equipo_estado', { p_codigo: cod }); sesion.equipo = cod; location.href = 'equipo.html'; }
+    catch (ex) { err.textContent = ex.message; beep('err'); }
+  });
+  if (sesion.equipo) { $('#cod').value = sesion.equipo; }
+
+  // Registro
+  let emblema = EMBLEMAS[0], color = COLORES[0];
+  const pintarSel = () => {
+    $('#sel-emblemas').innerHTML = EMBLEMAS.map((e) => `<button type="button" data-e="${e}" class="${e === emblema ? 'sel' : ''}" style="color:${e === emblema ? color : 'inherit'}">${ICONOS[e]}</button>`).join('');
+    $('#sel-colores').innerHTML = COLORES.map((c) => `<button type="button" data-c="${c}" class="${c === color ? 'sel' : ''}" style="background:${c}"></button>`).join('');
+  };
+  pintarSel();
+  $('#sel-emblemas').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) { emblema = b.dataset.e; pintarSel(); } });
+  $('#sel-colores').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) { color = b.dataset.c; pintarSel(); } });
+  $('#integrantes').innerHTML = ROLES.map((r, i) => `
+    <div class="fila" style="gap:8px;flex-wrap:nowrap">
+      <input type="text" placeholder="Nombre ${i + 1}" data-i="${i}" maxlength="30" style="flex:1" ${i < 2 ? 'required' : ''}>
+      <select data-rol="${i}" style="width:170px">${ROLES.map((x) => `<option value="${x.clave}" ${x.clave === r.clave ? 'selected' : ''}>${x.nombre}</option>`).join('')}</select>
+    </div>`).join('');
+  $('#form-registro').addEventListener('submit', async (e) => {
+    e.preventDefault(); const err = $('#err-registro'); err.textContent = '';
+    const integrantes = $$('#integrantes input').map((inp, i) => ({ nombre: inp.value.trim(), rol: $(`[data-rol="${i}"]`).value })).filter((x) => x.nombre);
+    if (integrantes.length < 2) { err.textContent = 'Escriban al menos dos integrantes.'; return; }
+    const btn = e.target.querySelector('button[type=submit]'); btn.disabled = true;
+    try {
+      const r = await rpc('registrar_equipo', { p_codigo_jornada: $('#jcod').value.trim().toUpperCase(), p_nombre: $('#nombre').value.trim(), p_emblema: emblema, p_color: color, p_integrantes: integrantes });
+      sesion.equipo = r.codigo; $('#codigo-nuevo').textContent = r.codigo; $('#card-registro').classList.add('oculto'); $('#card-listo').classList.remove('oculto'); beep('ok');
+      $('#card-listo').scrollIntoView({ behavior: 'smooth' });
+    } catch (ex) { err.textContent = ex.message; beep('err'); } finally { btn.disabled = false; }
+  });
+</script>
+</body>
+</html>

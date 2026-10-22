@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hardware · XIAO ESP32S3 Sense · Circuito ODS</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23A9C719'><path d='M13 2 3 14h9l-1 8 10-12h-9l1-8z'/></svg>">
+<link rel="stylesheet" href="css/estilo.css">
+<style>
+  .paso { display: grid; grid-template-columns: 44px 1fr; gap: 14px; margin-bottom: 18px; }
+  .paso .n { width: 40px; height: 40px; border-radius: 12px; background: var(--lima); color: var(--tinta); display: grid; place-items: center; font-family: var(--display); font-weight: 800; font-size: 1.1rem; }
+  code { font-family: var(--mono); background: #050705; border: 1px solid var(--borde); border-radius: 6px; padding: 1px 6px; font-size: .88em; color: var(--lima-brillo); }
+</style>
+</head>
+<body>
+<header id="barra"></header>
+<main class="contenedor" style="padding:40px 0">
+  <span class="eyebrow">Nivel 4 · CONNECT</span>
+  <h1 style="font-size:clamp(1.8rem,4vw,3rem)">Conectar el <span class="resaltado">XIAO ESP32S3 Sense</span></h1>
+  <p class="suave" style="max-width:720px">El dispositivo manda datos reales (humedad del suelo o fotos de la cámara) a un <b>webhook</b>. El sistema los guarda con el token del equipo y la app de ustedes los lee. Sin señal real no se aprueba el nivel 4.</p>
+
+  <div id="mi-token" class="card lima-borde oculto" style="margin:20px 0">
+    <h3>${ICO_KEY} Token de tu equipo</h3>
+    <div class="terminal"><pre id="token"></pre><button class="btn chico copiar" id="cp-token">${ICO_COPY}</button></div>
+    <p class="ayuda">Equipo <b id="eq-nombre"></b> · <span id="eq-id-wrap">equipo_id: <code id="eq-id"></code></span> · lecturas recibidas: <b id="n-lect" class="lima">0</b></p>
+  </div>
+
+  <div class="grid g2" style="margin-top:24px">
+    <div class="card">
+      <h3>${ICO_CPU} Ruta A · XIAO ESP32S3 Sense (Arduino)</h3>
+      <div class="paso"><div class="n">1</div><div><b>Instalen el soporte ESP32</b> en Arduino IDE (Preferencias → URL adicional) y elijan la placa <code>XIAO_ESP32S3</code> con <code>PSRAM: OPI PSRAM</code>.<div class="terminal" style="margin-top:6px"><pre>https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json</pre></div></div></div>
+      <div class="paso"><div class="n">2</div><div><b>Conecten el sensor Grove de humedad</b>: VCC → 3V3 · GND → GND · SIG → A0. La cámara ya viene en la tarjeta Sense.</div></div>
+      <div class="paso"><div class="n">3</div><div><b>Descarguen el firmware</b> y cambien 3 líneas: WiFi, clave y token del equipo. <a class="btn chico primario" href="firmware/xiao_esp32s3_ods.ino" download>${ICO_DOWNLOAD} xiao_esp32s3_ods.ino</a></div></div>
+      <div class="paso"><div class="n">4</div><div><b>Suban y abran el Monitor Serie</b> (115200). Deben ver <code>[http] 200</code>. En la consola del equipo aparece la lectura al instante.</div></div>
+      <div class="callout aviso" style="margin-top:8px"><b>Cable USB-C de datos</b>, no solo de carga. Si el puerto no aparece: mantengan BOOT, pulsen RESET, suelten BOOT. Red del colegio bloqueada → usen el punto de acceso del celular del monitor (2,4 GHz).</div>
+    </div>
+    <div class="card">
+      <h3>${ICO_WIFI} Ruta B · Cualquier cosa que haga un POST</h3>
+      <p class="suave">Si el XIAO no coopera, cualquier cliente HTTP vale: Make, n8n, Python, la app de la cámara del celular con un atajo, un botón en Lovable… Lo importante es que la señal sea real.</p>
+      <div class="terminal"><span class="etiqueta">POST · JSON</span><pre id="curl" style="padding-top:8px">curl -X POST ${WEBHOOK} \
+  -H "Content-Type: application/json" \
+  -d '{"token":"TU_TOKEN","tipo":"humedad","valor":42,"extra":{"unidad":"%","etiqueta":"humedo"}}'</pre></div>
+      <p class="ayuda" style="margin-top:10px">Campos: <code>token</code> (obligatorio), <code>tipo</code> (humedad · camara · sonido · luz · texto libre), <code>valor</code> (número opcional), <code>extra</code> (objeto opcional), <code>imagen_base64</code> (JPEG opcional). También acepta un POST con <code>Content-Type: image/jpeg</code> y <code>?token=…&tipo=camara</code>.</p>
+      <h3 style="margin-top:18px">${ICO_SEND} Probar desde aquí</h3>
+      <form id="form-test" class="grid" style="grid-template-columns:1fr 120px 120px auto;gap:8px;align-items:end">
+        <div><label>Token</label><input type="text" id="t-token" placeholder="ods_…"></div>
+        <div><label>Tipo</label><input type="text" id="t-tipo" value="humedad"></div>
+        <div><label>Valor</label><input type="number" id="t-valor" value="42"></div>
+        <button class="btn primario">Enviar</button>
+      </form>
+      <div id="t-res" class="terminal oculto" style="margin-top:8px"></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:18px">
+    <h3>${ICO_LINK} Leer los datos desde la app del equipo (Lovable u otra)</h3>
+    <p class="suave">La tabla <code>lecturas</code> es de lectura pública. La app solo necesita la URL del proyecto, la clave pública y el <code>equipo_id</code>.</p>
+    <div class="grid g2" style="gap:14px">
+      <div>
+        <div class="terminal"><span class="etiqueta">REST · últimas 50 lecturas</span><pre id="rest" style="padding-top:8px">GET ${SUPA}/rest/v1/lecturas?equipo_id=eq.EQUIPO_ID&order=created_at.desc&limit=50
+apikey: ${KEY}</pre></div>
+        <p class="ayuda" style="margin-top:8px">Campos: <code>id, equipo_id, tipo, valor, extra (json), imagen_url, created_at</code>.</p>
+      </div>
+      <div>
+        <div class="terminal"><span class="etiqueta">Prompt para Lovable (pégalo y completa)</span><pre id="prompt-lovable" style="padding-top:8px"></pre><button class="btn chico copiar" id="cp-prompt">${ICO_COPY}</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:18px">
+    <h3>${ICO_EYE} Visión con IA sin programar: SenseCraft AI</h3>
+    <p class="suave">Para el reto de visión (residuos, hojas con roya, fauna, ceniza…) entrenen un clasificador en <a href="https://sensecraft.seeed.cc/ai/" target="_blank">SenseCraft AI ↗</a> con Chrome o Edge de escritorio y despliéguenlo en el XIAO. Luego envíen al webhook la clase detectada: <code>{"token":"…","tipo":"vision","valor":87,"extra":{"clase":"reciclable","confianza":87}}</code>. Esa misión suma 80 XP extra.</p>
+  </div>
+</main>
+<footer id="pie"></footer>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/datos.js"></script>
+<script src="js/comun.js"></script>
+<script>
+  pintarBarra('hardware.html'); pintarPie();
+  document.body.innerHTML = document.body.innerHTML
+    .replace(/\$\{ICO_KEY\}/g, ico('key')).replace(/\$\{ICO_COPY\}/g, ico('copy')).replace(/\$\{ICO_CPU\}/g, ico('cpu')).replace(/\$\{ICO_DOWNLOAD\}/g, ico('download'))
+    .replace(/\$\{ICO_WIFI\}/g, ico('wifi')).replace(/\$\{ICO_SEND\}/g, ico('send')).replace(/\$\{ICO_LINK\}/g, ico('link')).replace(/\$\{ICO_EYE\}/g, ico('eye'))
+    .replace(/\$\{WEBHOOK\}/g, CONFIG.WEBHOOK_URL).replace(/\$\{SUPA\}/g, CONFIG.SUPABASE_URL).replace(/\$\{KEY\}/g, CONFIG.SUPABASE_KEY);
+
+  const promptLovable = (id) => `Crea una app web sencilla y bonita para mi proyecto escolar. Debe leer datos en tiempo real de Supabase:
+- URL: ${CONFIG.SUPABASE_URL}
+- Clave pública (anon): ${CONFIG.SUPABASE_KEY}
+- Tabla: lecturas (columnas: id, equipo_id, tipo, valor, extra json, imagen_url, created_at)
+- Filtra siempre por equipo_id = '${id || 'EQUIPO_ID'}' y ordena por created_at descendente.
+Muestra: el último valor en grande con su etiqueta (extra.etiqueta), una gráfica de los últimos 50 valores, la última imagen (imagen_url) si existe, y una alerta visible cuando el valor cruce el umbral que yo defina. Suscríbete a cambios en tiempo real (realtime) de esa tabla. Usa solo lectura, sin login.`;
+  $('#prompt-lovable').textContent = promptLovable('');
+  $('#cp-prompt').onclick = () => copiar($('#prompt-lovable').textContent, 'Prompt copiado');
+
+  // Si viene el código del equipo (?c=XXXX) o hay sesión, mostramos su token
+  const c = new URLSearchParams(location.search).get('c') || sesion.equipo;
+  if (c) {
+    rpc('equipo_estado', { p_codigo: c }).then((d) => {
+      $('#mi-token').classList.remove('oculto'); $('#token').textContent = d.token; $('#eq-nombre').textContent = d.equipo.nombre; $('#eq-id').textContent = d.equipo.id; $('#n-lect').textContent = d.lecturas;
+      $('#t-token').value = d.token; $('#curl').textContent = $('#curl').textContent.replace('TU_TOKEN', d.token); $('#rest').textContent = $('#rest').textContent.replace('EQUIPO_ID', d.equipo.id);
+      $('#prompt-lovable').textContent = promptLovable(d.equipo.id);
+      $('#cp-token').onclick = () => copiar(d.token, 'Token copiado');
+    }).catch(() => {});
+  }
+  $('#form-test').onsubmit = async (e) => {
+    e.preventDefault(); const res = $('#t-res'); res.classList.remove('oculto'); res.innerHTML = '<pre>enviando…</pre>';
+    try {
+      const r = await fetch(CONFIG.WEBHOOK_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: $('#t-token').value.trim(), tipo: $('#t-tipo').value.trim(), valor: $('#t-valor').value === '' ? null : +$('#t-valor').value, extra: { origen: 'prueba web' } }) });
+      const j = await r.json(); res.innerHTML = `<pre class="${r.ok ? 'ok' : 'err'}">${r.status} ${esc(JSON.stringify(j))}</pre>`; if (r.ok) { beep('ok'); if (j.total) $('#n-lect').textContent = j.total; } else beep('err');
+    } catch (ex) { res.innerHTML = `<pre class="err">${esc(ex.message)}</pre>`; }
+  };
+</script>
+</body>
+</html>

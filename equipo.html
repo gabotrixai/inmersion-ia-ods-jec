@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Consola del equipo · Circuito ODS</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23A9C719'><path d='M13 2 3 14h9l-1 8 10-12h-9l1-8z'/></svg>">
+<link rel="stylesheet" href="css/estilo.css">
+</head>
+<body>
+<header id="barra"></header>
+<main class="contenedor" style="padding:28px 0 40px">
+  <div id="cabecera"></div>
+  <div id="anuncios"></div>
+  <section style="margin-top:22px">
+    <div class="fila espacio" style="margin-bottom:10px">
+      <span class="eyebrow" style="margin:0">Mapa del circuito</span>
+      <span class="apagado mono" style="font-size:.72rem">1 → 2 → (3 ‖ 4) → 5</span>
+    </div>
+    <div id="circuito" class="circuito"></div>
+  </section>
+  <section id="panel" style="margin-top:22px"></section>
+  <section id="votacion" style="margin-top:22px"></section>
+  <div class="grid g2" style="margin-top:22px">
+    <section id="extras"></section>
+    <section id="caos"></section>
+  </div>
+  <div class="grid g2" style="margin-top:22px">
+    <section id="lecturas"></section>
+    <section id="ranking"></section>
+  </div>
+</main>
+<div id="overlay"></div>
+<footer id="pie"></footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/datos.js"></script>
+<script src="js/comun.js"></script>
+<script src="js/equipo.js"></script>
+</body>
+</html>

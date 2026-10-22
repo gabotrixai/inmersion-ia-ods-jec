@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Control · Circuito ODS</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23A9C719'><path d='M13 2 3 14h9l-1 8 10-12h-9l1-8z'/></svg>">
+<link rel="stylesheet" href="css/estilo.css">
+<style>
+  .rubrica { display: grid; gap: 6px; }
+  .rubrica .r { display: grid; grid-template-columns: 1fr 140px 30px; gap: 10px; align-items: center; font-size: .88rem; }
+  .rubrica input[type=range] { width: 100%; accent-color: var(--lima); }
+  .entrega-card .contenido { max-height: 420px; overflow: auto; }
+  .toggle { display: inline-flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 12px; border: 1px solid var(--borde-fuerte); cursor: pointer; background: var(--panel-2); font-family: var(--mono); font-size: .8rem; }
+  .toggle.on { border-color: var(--lima); color: var(--lima); background: var(--lima-tinte); }
+</style>
+</head>
+<body>
+<header id="barra"></header>
+<main class="contenedor" style="padding:28px 0 40px">
+  <div id="login" class="estrecho">
+    <div class="card lima-borde">
+      <span class="eyebrow">Panel de control</span>
+      <h2>Facilitador y jurado</h2>
+      <form id="form-login">
+        <div class="grid g2" style="gap:12px">
+          <div><label>Código de la jornada</label><input class="codigo" id="l-cod" maxlength="6" type="text" required></div>
+          <div><label>PIN del control</label><input class="codigo" id="l-pin" type="password" required></div>
+        </div>
+        <div id="l-err" class="error"></div>
+        <button class="btn primario bloque" style="margin-top:14px">Entrar al control</button>
+      </form>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <span class="eyebrow">Nueva jornada</span>
+      <h3>Crear una jornada (un grupo = una jornada)</h3>
+      <p class="ayuda">Para dos sesiones espejo creen dos jornadas: así cada grupo tiene su ranking, sus equipos y su cierre.</p>
+      <form id="form-crear">
+        <label>Nombre</label><input id="c-nombre" type="text" placeholder="Ej: Inmersión IA · Grupo 1 · mañana" required>
+        <label>PIN del control (mínimo 4 caracteres, no lo compartan con los equipos)</label><input id="c-pin" type="password" minlength="4" required>
+        <div id="c-err" class="error"></div>
+        <button class="btn bloque" style="margin-top:14px">Crear jornada</button>
+      </form>
+    </div>
+  </div>
+  <div id="app" class="oculto"></div>
+</main>
+<footer id="pie"></footer>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/datos.js"></script>
+<script src="js/comun.js"></script>
+<script src="js/juez.js"></script>
+</body>
+</html>
