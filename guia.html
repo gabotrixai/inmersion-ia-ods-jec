@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Guía del facilitador · Circuito ODS</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23A9C719'><path d='M13 2 3 14h9l-1 8 10-12h-9l1-8z'/></svg>">
-<link rel="stylesheet" href="css/estilo.css">
+<link rel="stylesheet" href="css/estilo.css?v=3">
 <style>
   .salon { width: 100%; height: auto; font-family: var(--mono); }
   .salon text { fill: var(--texto); font-size: 11px; }
@@ -142,9 +142,9 @@
 </main>
 <footer id="pie"></footer>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="js/config.js"></script>
-<script src="js/datos.js"></script>
-<script src="js/comun.js"></script>
+<script src="js/config.js?v=3"></script>
+<script src="js/datos.js?v=3"></script>
+<script src="js/comun.js?v=3"></script>
 <script>
   pintarBarra('guia.html'); pintarPie();
   $('#agenda').innerHTML = AGENDA.map((a) => `<div class="item"><div class="hora">${a.t} · ${a.dur} min · ${esc(a.fase)}</div><b>${esc(a.titulo)}</b><div class="suave" style="font-size:.9rem">${esc(a.desc)}</div></div>`).join('');

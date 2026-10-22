@@ -145,7 +145,10 @@
     img.src = url;
   });
   window.subirImagen = async (file, ruta) => {
-    const blob = await comprimirImagen(file);
+    // Si el navegador no puede decodificar la imagen (p. ej. HEIC), se sube el archivo original si es imagen y pesa menos de 8 MB
+    let blob;
+    try { blob = await comprimirImagen(file); }
+    catch (e) { if (/^image\//.test(file.type) && file.size < 8 * 1024 * 1024) blob = file; else throw e; }
     const { error } = await sb.storage.from('entregas').upload(ruta, blob, { contentType: 'image/jpeg', upsert: true });
     if (error) throw new Error('No se pudo subir la foto: ' + error.message);
     return sb.storage.from('entregas').getPublicUrl(ruta).data.publicUrl + '?v=' + Date.now();

@@ -313,9 +313,9 @@ function formBuild(c) {
   <div class="grid g2" style="gap:14px">
     <div>
       <label>Foto de la maqueta</label>
-      <input type="file" id="foto" accept="image/*" capture="environment">
-      <input type="hidden" name="foto" value="${esc(c.foto || '')}">
-      <div id="foto-prev" style="margin-top:8px">${c.foto ? `<img src="${esc(c.foto)}" style="border-radius:12px;max-height:260px">` : '<div class="ayuda">Buena luz, fondo limpio, que se vean las partes marcadas.</div>'}</div>
+      <input type="file" id="foto-archivo" accept="image/*" capture="environment">
+      <input type="hidden" name="foto" id="foto-url" value="${esc(S.fotoNivel3 || c.foto || '')}">
+      <div id="foto-prev" style="margin-top:8px">${(S.fotoNivel3 || c.foto) ? `<img src="${esc(S.fotoNivel3 || c.foto)}" style="border-radius:12px;max-height:260px"><div class="ayuda lima">${ico('check')} Foto cargada</div>` : '<div class="ayuda">Buena luz, fondo limpio, que se vean las partes marcadas.</div>'}</div>
     </div>
     <div>
       <label>Partes y qué representa cada una</label>
@@ -425,10 +425,13 @@ function enlazarPanel(n) {
     };
   }
   if (n === 3) {
-    $('#foto').onchange = async (e) => {
+    $('#foto-archivo').onchange = async (e) => {
       const file = e.target.files[0]; if (!file) return; $('#foto-prev').innerHTML = '<div class="ayuda">Subiendo foto…</div>';
-      try { const url = await subirImagen(file, `${S.d.equipo.id}/nivel3_${Date.now()}.jpg`); f.foto.value = url; $('#foto-prev').innerHTML = `<img src="${url}" style="border-radius:12px;max-height:260px">`; toast('Foto subida'); }
-      catch (ex) { toast(ex.message, 'error'); $('#foto-prev').innerHTML = ''; }
+      try {
+        const url = await subirImagen(file, `${S.d.equipo.id}/nivel3_${Date.now()}.jpg`);
+        S.fotoNivel3 = url; const h = $('#foto-url'); if (h) h.value = url;
+        $('#foto-prev').innerHTML = `<img src="${url}" style="border-radius:12px;max-height:260px"><div class="ayuda lima">${ico('check')} Foto cargada</div>`; toast('Foto subida'); beep('ok');
+      } catch (ex) { toast(ex.message, 'error'); $('#foto-prev').innerHTML = `<div class="error">${esc(ex.message)}. Intenten con otra foto o tómenla directamente con la cámara.</div>`; }
     };
   }
   if (n === 5) {
@@ -451,11 +454,11 @@ function enlazarPanel(n) {
         if (!['entrada', 'proceso', 'decision', 'salida'].every((t) => tipos.has(t))) throw new Error('El mapa necesita al menos un bloque de cada tipo: ENTRADA, PROCESO, DECISIÓN y SALIDA.');
         c.pseudocodigo = pseudocodigo(S.bloques);
       }
-      if (n === 3 && !c.foto) throw new Error('Falta la foto de la maqueta.');
+      if (n === 3) { c.foto = c.foto || S.fotoNivel3 || ''; if (!c.foto) throw new Error('Falta la foto de la maqueta: toquen «Elegir archivo», esperen el aviso «Foto cargada» y vuelvan a enviar.'); }
       if (n === 4 && (S.d.lecturas || 0) < 3) throw new Error('El sistema aún no recibe señal suficiente del dispositivo (mínimo 3 lecturas).');
       const btn = f.querySelector('button[type=submit]'); btn.disabled = true;
       await rpc('equipo_entregar', { p_codigo: CODIGO, p_tipo: 'nivel', p_nivel: n, p_ref: null, p_contenido: c });
-      beep('ok'); toast(`${ico('send')} Entrega enviada. El control la revisa en vivo.`); if (n === 2) S.bloques = null;
+      beep('ok'); toast(`${ico('send')} Entrega enviada. El control la revisa en vivo.`); if (n === 2) S.bloques = null; if (n === 3) S.fotoNivel3 = null;
       S.firmas.panel = null; await cargar();
     } catch (ex) { err.textContent = ex.message; beep('err'); const btn = f.querySelector('button[type=submit]'); if (btn) btn.disabled = false; }
   };
