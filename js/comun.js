@@ -106,7 +106,9 @@
   };
 
   // ---------- Timer de jornada ----------
+  // opciones.sonidos: 'todos' (aviso 5 min, último minuto, cuenta atrás 10 s, fin) | 'final' (último minuto y fin) | false
   window.iniciarTimer = (getFin, el, opciones = {}) => {
+    const timerAudio = { fin: null, ultimoSeg: null, sonados: new Set() }; // estado propio de cada cronómetro
     const tick = () => {
       const fin = getFin();
       if (!fin) { el.textContent = opciones.vacio ?? '--:--'; el.classList.remove('alerta', 'critico'); return; }
@@ -114,8 +116,17 @@
       el.textContent = seg <= 0 ? (opciones.fin ?? '00:00') : fmtMMSS(seg);
       el.classList.toggle('alerta', seg > 0 && seg <= 300);
       el.classList.toggle('critico', seg > 0 && seg <= 60);
+      if (!opciones.sonidos) return;
+      // Un cronómetro nuevo reinicia la memoria de avisos; cada aviso suena una sola vez por cronómetro
+      if (timerAudio.fin !== fin) { timerAudio.fin = fin; timerAudio.sonados = new Set(); timerAudio.ultimoSeg = seg; return; }
+      const s = Math.ceil(seg), prev = Math.ceil(timerAudio.ultimoSeg); timerAudio.ultimoSeg = seg;
+      const una = (k, fn) => { if (!timerAudio.sonados.has(k)) { timerAudio.sonados.add(k); fn(); } };
+      if (opciones.sonidos === 'todos' && prev > 300 && s <= 300 && s > 290) una('5min', Sonido.aviso5);
+      if (prev > 60 && s <= 60 && s > 50) una('1min', Sonido.ultimoMinuto);
+      if (opciones.sonidos === 'todos' && s <= 10 && s >= 1 && s !== prev) una('t' + s, () => Sonido.tick(s));
+      if (prev > 0 && s <= 0) una('fin', Sonido.tiempo);
     };
-    tick(); return setInterval(tick, 500);
+    tick(); return setInterval(tick, 250);
   };
 
   // ---------- Realtime (con repliegue a sondeo) ----------
@@ -162,19 +173,58 @@
     set juez(v) { v ? localStorage.setItem('ods_juez', JSON.stringify(v)) : localStorage.removeItem('ods_juez'); },
   };
 
-  // ---------- Sonidos cortos (WebAudio, sin archivos) ----------
-  let ctx;
-  window.beep = (tipo = 'ok') => {
-    try {
-      ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
-      const o = ctx.createOscillator(), g = ctx.createGain();
-      o.connect(g); g.connect(ctx.destination);
-      const t = ctx.currentTime;
-      if (tipo === 'ok') { o.frequency.setValueAtTime(660, t); o.frequency.setValueAtTime(990, t + .09); }
-      else if (tipo === 'err') { o.frequency.setValueAtTime(220, t); o.frequency.setValueAtTime(160, t + .12); }
-      else { o.frequency.setValueAtTime(440, t); o.frequency.setValueAtTime(880, t + .08); o.frequency.setValueAtTime(440, t + .16); }
-      g.gain.setValueAtTime(.12, t); g.gain.exponentialRampToValueAtTime(.001, t + .3);
-      o.start(t); o.stop(t + .32);
-    } catch { /* sin audio */ }
+  // ---------- Sonidos sintetizados (WebAudio, sin archivos) ----------
+  // Los navegadores exigen un gesto del usuario antes de sonar: Sonido.desbloquear() se llama en el primer click/tecla.
+  window.Sonido = (() => {
+    let ctx;
+    const ac = () => { ctx = ctx || new (window.AudioContext || window.webkitAudioContext)(); if (ctx.state === 'suspended') ctx.resume(); return ctx; };
+    const activo = () => localStorage.getItem('ods_sonido') !== 'off';
+    // tono(frecuencia, duración s, opciones): onda, volumen, retardo, frecuencia final (deslizamiento)
+    function tono(f, dur, { onda = 'sine', vol = .15, en = 0, hasta = null } = {}) {
+      if (!activo()) return;
+      try {
+        const c = ac(), o = c.createOscillator(), g = c.createGain(), t = c.currentTime + en;
+        o.type = onda; o.frequency.setValueAtTime(f, t); if (hasta) o.frequency.exponentialRampToValueAtTime(hasta, t + dur);
+        g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.012); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+        o.connect(g); g.connect(c.destination); o.start(t); o.stop(t + dur + .02);
+      } catch { /* sin audio */ }
+    }
+    const S = {
+      activo,
+      desbloquear() { try { ac(); } catch { /* nada */ } },
+      alternar() { localStorage.setItem('ods_sonido', activo() ? 'off' : 'on'); if (activo()) { S.desbloquear(); S.ok(); } return activo(); },
+      // Interfaz
+      ok() { tono(660, .12, { onda: 'triangle' }); tono(990, .18, { onda: 'triangle', en: .09 }); },
+      err() { tono(220, .14, { onda: 'square', vol: .08 }); tono(160, .22, { onda: 'square', vol: .08, en: .12 }); },
+      alerta() { [0, .16, .32].forEach((en, i) => tono(i % 2 ? 880 : 440, .12, { onda: 'square', vol: .1, en })); },
+      // Juego
+      llave() { [523, 659, 784, 1047].forEach((f, i) => tono(f, .14, { onda: 'triangle', en: i * .07, vol: .14 })); },
+      aprobado() { [523, 659, 784].forEach((f, i) => tono(f, .22, { onda: 'triangle', en: i * .12 })); tono(1047, .5, { onda: 'triangle', en: .36, vol: .16 }); },
+      devuelto() { tono(392, .2, { onda: 'sawtooth', vol: .07 }); tono(311, .35, { onda: 'sawtooth', vol: .07, en: .2 }); },
+      nivel() { [392, 494, 587, 784].forEach((f, i) => tono(f, .18, { onda: 'square', vol: .07, en: i * .09 })); tono(784, .4, { en: .4, vol: .12 }); },
+      nuevaEntrega() { tono(1320, .08, { vol: .12 }); tono(1760, .14, { vol: .12, en: .1 }); },
+      senal() { tono(600, .06, { onda: 'square', vol: .06 }); tono(1200, .06, { onda: 'square', vol: .06, en: .08 }); tono(2400, .12, { onda: 'square', vol: .06, en: .16 }); },
+      caos() { for (let i = 0; i < 4; i++) { tono(520, .35, { onda: 'sawtooth', vol: .09, en: i * .5, hasta: 980 }); tono(980, .15, { onda: 'sawtooth', vol: .09, en: i * .5 + .35, hasta: 520 }); } },
+      voto() { tono(880, .1, { onda: 'triangle' }); tono(1175, .25, { onda: 'triangle', en: .1 }); },
+      fanfarria() {
+        const n = [523, 523, 523, 659, 784, 659, 784, 1047]; const d = [.15, .15, .15, .3, .3, .15, .3, .8];
+        let en = 0; n.forEach((f, i) => { tono(f, d[i], { onda: 'square', vol: .08, en }); tono(f / 2, d[i], { onda: 'triangle', vol: .08, en }); en += d[i]; });
+      },
+      // Cronómetro
+      aviso5() { [0, .25].forEach((en) => tono(740, .18, { onda: 'triangle', vol: .14, en })); },
+      ultimoMinuto() { [0, .2, .4].forEach((en) => tono(880, .15, { onda: 'square', vol: .1, en })); },
+      tick(seg) { tono(seg <= 3 ? 1760 : 1320, .07, { onda: 'square', vol: seg <= 3 ? .14 : .1 }); },
+      tiempo() { for (let i = 0; i < 3; i++) { tono(880, .22, { onda: 'square', vol: .14, en: i * .55 }); tono(660, .28, { onda: 'square', vol: .14, en: i * .55 + .24 }); } tono(440, 1.2, { onda: 'sawtooth', vol: .1, en: 1.7, hasta: 220 }); },
+    };
+    // Primer gesto del usuario desbloquea el audio
+    ['pointerdown', 'keydown', 'touchstart'].forEach((ev) => document.addEventListener(ev, () => S.desbloquear(), { once: true, passive: true }));
+    return S;
+  })();
+  window.beep = (tipo = 'ok') => (tipo === 'ok' ? Sonido.ok() : tipo === 'err' ? Sonido.err() : Sonido.alerta());
+
+  // Botón de silencio reutilizable (pantalla, control, consola)
+  window.botonSonido = (el) => {
+    const pintar = () => { el.innerHTML = Sonido.activo() ? '🔊' : '🔇'; el.title = Sonido.activo() ? 'Silenciar sonidos' : 'Activar sonidos'; el.classList.toggle('silencio', !Sonido.activo()); };
+    el.onclick = () => { Sonido.alternar(); pintar(); }; pintar();
   };
 })();

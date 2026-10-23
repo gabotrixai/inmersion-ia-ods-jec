@@ -30,7 +30,7 @@ async function iniciar() {
   J.off = suscribir('juez-' + J.jornada.id, ['jornadas', 'equipos', 'entregas', 'eventos', 'votos', 'lecturas'], async (p) => {
     const antes = J.entregas.filter((x) => x.estado === 'pendiente').length; await cargar();
     const ahora = J.entregas.filter((x) => x.estado === 'pendiente').length;
-    if (!p.sondeo && ahora > antes) { beep('alerta'); toast(`${ico('send')} Nueva entrega por revisar`); }
+    if (!p.sondeo && ahora > antes) { Sonido.nuevaEntrega(); toast(`${ico('send')} Nueva entrega por revisar`); }
   });
 }
 
@@ -89,6 +89,7 @@ function renderCabecera() {
         <div class="stat" style="text-align:center"><div class="num" style="color:${pendientes().length ? 'var(--amarillo)' : 'var(--lima)'}">${pendientes().length}</div><div class="lbl">por revisar</div></div>
         <div class="stat" style="text-align:center;min-width:120px"><div class="num mono" id="timer" style="font-size:1.6rem">--:--</div><div class="lbl">${esc(j.timer_label || 'cronómetro')}</div></div>
         <a class="btn chico" href="pantalla.html?j=${j.codigo}" target="_blank">${ico('monitor')} Pantalla</a>
+        <button class="btn btn-sonido" id="sonido"></button>
         <button class="btn chico fantasma" id="salir">Salir</button>
       </div>
     </div>
@@ -97,8 +98,10 @@ function renderCabecera() {
     ${[['control', 'Control'], ['entregas', `Entregas${pendientes().length ? `<span class="n">${pendientes().length}</span>` : ''}`], ['equipos', 'Equipos'], ['cierre', 'Votación y cierre'], ['exportar', 'Evidencias']].map(([k, t]) => `<button class="tab ${J.tab === k ? 'activo' : ''}" data-tab="${k}">${t}</button>`).join('')}
   </div>`;
   $('#salir').onclick = () => { sesion.juez = null; location.reload(); };
+  botonSonido($('#sonido'));
   $$('.tab').forEach((b) => (b.onclick = () => { J.tab = b.dataset.tab; J.firmas.tab = null; render(); }));
-  clearInterval(J.timer); J.timer = iniciarTimer(() => J.jornada.timer_fin, $('#timer'));
+  // El control solo suena con entregas nuevas y fin de tiempo; los avisos del cronómetro los da la pantalla
+  clearInterval(J.timer); J.timer = iniciarTimer(() => J.jornada.timer_fin, $('#timer'), { sonidos: 'final' });
 }
 
 // ---------------------------------------------------------------- control
@@ -160,7 +163,7 @@ function tabControl() {
     const k = $('#caos-sel').value; let c = CAOS.find((x) => x.clave === k);
     if (k === '__custom') c = { clave: 'custom', titulo: $('#caos-tit').value.trim(), desc: $('#caos-desc').value.trim(), xp: +$('#caos-xp').value || 40 };
     if (!c?.titulo) return toast('Falta el título', 'error');
-    try { await rpc('juez_evento', { ...auth(), p_equipo: $('#caos-eq').value || null, p_tipo: 'caos', p_titulo: c.titulo, p_descripcion: c.desc, p_payload: { clave: c.clave, xp: c.xp }, p_minutos: +$('#caos-min').value || 6 }); beep('alerta'); toast('Evento caos lanzado'); await cargar(); } catch (ex) { toast(ex.message, 'error'); }
+    try { await rpc('juez_evento', { ...auth(), p_equipo: $('#caos-eq').value || null, p_tipo: 'caos', p_titulo: c.titulo, p_descripcion: c.desc, p_payload: { clave: c.clave, xp: c.xp }, p_minutos: +$('#caos-min').value || 6 }); Sonido.caos(); toast('Evento caos lanzado'); await cargar(); } catch (ex) { toast(ex.message, 'error'); }
   };
   $('#btn-anuncio').onclick = async () => {
     const t = $('#an-tit').value.trim(); if (!t) return;
@@ -245,7 +248,7 @@ function enlazarEntregas(raiz = document, solo = null) {
       const puntaje = rangos.length ? total() : +($('[data-puntaje]', card)?.value || 0);
       const fb = $('[data-fb]', card).value.trim();
       if (estado === 'rechazada' && !fb) return toast('Si devuelven, escriban qué corregir.', 'aviso');
-      try { await rpc('juez_revisar', { ...auth(), p_entrega: id, p_estado: estado, p_puntaje: estado === 'aprobada' ? puntaje : 0, p_feedback: fb || null }); beep(estado === 'aprobada' ? 'ok' : 'err'); toast(estado === 'aprobada' ? 'Aprobada' : 'Devuelta'); J.firmas.tab = null; await cargar(); } catch (ex) { toast(ex.message, 'error'); }
+      try { await rpc('juez_revisar', { ...auth(), p_entrega: id, p_estado: estado, p_puntaje: estado === 'aprobada' ? puntaje : 0, p_feedback: fb || null }); (estado === 'aprobada' ? Sonido.ok() : Sonido.devuelto()); toast(estado === 'aprobada' ? 'Aprobada' : 'Devuelta'); J.firmas.tab = null; await cargar(); } catch (ex) { toast(ex.message, 'error'); }
     };
     $('[data-ok]', card).onclick = () => revisar('aprobada');
     $('[data-no]', card).onclick = () => revisar('rechazada');

@@ -107,11 +107,13 @@ function renderCabecera(eq, j) {
     <div style="margin-top:14px" class="fila espacio">
       <div style="flex:1;min-width:220px"><div class="xp-barra"><span style="width:${(aprobados / nivelMax) * 100}%"></span></div><div class="ayuda">${aprobados} de ${nivelMax} niveles aprobados</div></div>
       <div class="insignias">${Object.keys(INSIGNIAS).map((k) => `<span class="insignia ${eq.insignias?.includes(k) ? '' : 'gris'}" title="${esc(INSIGNIAS[k].desc)}"><span class="ico">${ICONOS[k.startsWith('nivel') ? ICON_NIVEL[k.split('_')[1]] : k === 'senal' ? 'wifi' : k === 'vision' ? 'eye' : k === 'flujo' ? 'wave' : k === 'caos' ? 'alert' : k === 'extra' ? 'star' : k === 'descifrador' ? 'key' : 'check']}</span>${esc(INSIGNIAS[k].nombre)}</span>`).join('')}</div>
-      <div class="fila" style="gap:6px"><span class="chip mono">código ${esc(S.d.codigo)}</span><button class="btn chico fantasma" id="btn-salir">Salir</button></div>
+      <div class="fila" style="gap:6px"><span class="chip mono">código ${esc(S.d.codigo)}</span><button class="btn btn-sonido" id="sonido"></button><button class="btn chico fantasma" id="btn-salir">Salir</button></div>
     </div>
   </div>`;
   $('#btn-salir').onclick = () => { sesion.equipo = ''; location.href = 'index.html'; };
-  clearInterval(S.timer); S.timer = iniciarTimer(() => S.d.jornada.timer_fin, $('#timer'));
+  botonSonido($('#sonido'));
+  // En la consola solo suenan el último minuto y el fin de tiempo (los avisos completos los da la pantalla del salón)
+  clearInterval(S.timer); S.timer = iniciarTimer(() => S.d.jornada.timer_fin, $('#timer'), { sonidos: 'final' });
 }
 
 function renderAnuncios(j) {
@@ -390,7 +392,7 @@ function enlazarPanel(n) {
       e.preventDefault(); const v = $('#resp-llave').value.trim(); if (!v) return;
       try {
         const r = await rpc('equipo_resolver_llave', { p_codigo: CODIGO, p_nivel: n, p_respuesta: v });
-        if (r.ok) { beep('ok'); toast(`${ico('unlock')} Llave descifrada. Acceso concedido.`); }
+        if (r.ok) { Sonido.llave(); toast(`${ico('unlock')} Llave descifrada. Acceso concedido.`); }
         else if (r.bloqueado) { beep('err'); toast(`Bloqueado ${r.segundos} s`, 'aviso'); }
         else { beep('err'); toast(`Respuesta incorrecta. Espera ${r.segundos} s para volver a intentar.`, 'error'); }
         S.firmas.panel = null; await cargar();
@@ -437,7 +439,7 @@ function enlazarPanel(n) {
   if (n === 5) {
     const upd = () => { $('#guion').textContent = guionPitch(Object.fromEntries(new FormData(f))); };
     f.addEventListener('input', upd);
-    let it; $('#btn-crono').onclick = () => { clearInterval(it); let s = 60; const el = $('#crono'); el.textContent = s; beep('alerta'); it = setInterval(() => { s--; el.textContent = s; el.style.color = s <= 10 ? '#ff6b6b' : 'var(--lima)'; if (s <= 0) { clearInterval(it); beep('alerta'); toast('¡Tiempo!', 'aviso'); } }, 1000); };
+    let it; $('#btn-crono').onclick = () => { clearInterval(it); let s = 60; const el = $('#crono'); el.textContent = s; Sonido.ultimoMinuto(); it = setInterval(() => { s--; el.textContent = s; el.style.color = s <= 10 ? '#ff6b6b' : 'var(--lima)'; if (s <= 10 && s > 0) Sonido.tick(s); if (s <= 0) { clearInterval(it); Sonido.tiempo(); toast('¡Tiempo!', 'aviso'); } }, 1000); };
   }
   f.onsubmit = async (e) => {
     e.preventDefault(); const err = $('#err-nivel'); err.textContent = '';
@@ -518,7 +520,7 @@ function revisarCaosNuevo() {
   const nuevos = eventosCaos().filter((e) => !S.vistos.has(e.id) && (!e.expira_en || new Date(e.expira_en) > Date.now()) && !(S.d.entregas || []).some((x) => x.tipo === 'caos' && x.ref === e.id));
   if (!nuevos.length) return;
   const e = nuevos[0]; S.vistos.add(e.id); localStorage.setItem('ods_vistos', JSON.stringify([...S.vistos]));
-  beep('alerta'); if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+  Sonido.caos(); if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
   $('#overlay').innerHTML = `<div class="overlay"><div class="card" style="border-color:var(--amarillo)">
     <span class="eyebrow" style="color:var(--amarillo)">Evento caos</span>
     <div class="caos-titulo">${esc(e.titulo)}</div>
@@ -594,10 +596,14 @@ function renderVotacion(eq, j) {
     const antes = S.d; await cargar();
     if (!p.sondeo && antes && S.d) {
       const a = [1, 2, 3, 4, 5].filter((n) => (antes.entregas || []).find((x) => x.tipo === 'nivel' && x.nivel === n)?.estado !== 'aprobada' && aprobado(n));
-      if (a.length) { beep('ok'); toast(`${ico('check')} ¡Nivel ${a[0]} aprobado! +${entregaNivel(a[0]).xp_otorgado} XP`); }
+      if (a.length) { Sonido.aprobado(); toast(`${ico('check')} ¡Nivel ${a[0]} aprobado! +${entregaNivel(a[0]).xp_otorgado} XP`); }
       const r = [1, 2, 3, 4, 5].filter((n) => (antes.entregas || []).find((x) => x.tipo === 'nivel' && x.nivel === n)?.estado !== 'rechazada' && entregaNivel(n)?.estado === 'rechazada');
-      if (r.length) { beep('err'); toast(`${ico('alert')} El control devolvió el nivel ${r[0]}. Revisen el comentario.`, 'aviso'); S.nivelSel = r[0]; S.bloques = null; renderCircuito(); siCambia('panel', firmaPanel(), renderPanel); }
-      if ((S.d.lecturas || 0) > (antes.lecturas || 0) && (antes.lecturas || 0) === 0) { beep('ok'); toast(`${ico('wifi')} ¡Primera señal del dispositivo recibida! +50 XP`); }
+      if (r.length) { Sonido.devuelto(); toast(`${ico('alert')} El control devolvió el nivel ${r[0]}. Revisen el comentario.`, 'aviso'); S.nivelSel = r[0]; S.bloques = null; renderCircuito(); siCambia('panel', firmaPanel(), renderPanel); }
+      if ((S.d.lecturas || 0) > (antes.lecturas || 0) && (antes.lecturas || 0) === 0) { Sonido.senal(); toast(`${ico('wifi')} ¡Primera señal del dispositivo recibida! +50 XP`); }
+      const abAntes = (antes.jornada.niveles_abiertos || []).length, abAhora = (S.d.jornada.niveles_abiertos || []).length;
+      if (abAhora > abAntes) { Sonido.nivel(); toast(`${ico('unlock')} El control abrió un nuevo nivel.`); }
+      if (antes.jornada.estado !== 'votacion' && S.d.jornada.estado === 'votacion') { Sonido.voto(); toast(`${ico('star')} ¡Votación abierta! Voten por otros equipos.`); }
+      if (antes.jornada.estado !== 'cerrada' && S.d.jornada.estado === 'cerrada') Sonido.fanfarria();
     }
   });
 })();

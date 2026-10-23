@@ -250,6 +250,12 @@ body.pantalla { overflow: hidden; }
 .podio .p.dos { order: 1; }
 .podio .p.tres { order: 3; }
 
+/* ---------- Sonido ---------- */
+.btn-sonido { width: 42px; height: 42px; padding: 0; border-radius: 50%; font-size: 1.1rem; }
+.btn-sonido.silencio { opacity: .5; }
+.sonido-flotante { position: fixed; top: 10px; right: 58px; z-index: 100; opacity: .35; }
+.sonido-flotante:hover { opacity: 1; }
+
 /* ---------- Varios ---------- */
 .emblema { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; color: var(--tinta); flex: none; }
 .emblema svg { width: 24px; height: 24px; }

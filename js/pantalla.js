@@ -3,6 +3,14 @@
 // =====================================================================
 const P = { codigo: (new URLSearchParams(location.search).get('j') || localStorage.getItem('ods_pantalla') || '').toUpperCase(), j: null, equipos: [], entregas: [], eventos: [], votos: [], ranking: [], timer: null, vistos: new Set(), inicio: Date.now() };
 $('#fs').onclick = () => (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen());
+botonSonido($('#sonido'));
+// Aviso hasta que el navegador permita audio (exige un click en la página)
+(function avisoAudio() {
+  const el = $('#aviso-audio'); if (!el) return;
+  const quitar = () => { el.remove(); };
+  ['pointerdown', 'keydown'].forEach((ev) => document.addEventListener(ev, quitar, { once: true }));
+  if (!Sonido.activo()) quitar();
+})();
 
 if (!P.codigo) {
   $('#root').innerHTML = `<div class="estrecho" style="grid-column:1/-1;align-self:center"><div class="card lima-borde centro"><span class="eyebrow">Pantalla</span><h2>Código de la jornada</h2><form id="f"><input class="codigo" id="c" maxlength="6" type="text" required><button class="btn primario bloque" style="margin-top:14px">Mostrar</button></form></div></div>`;
@@ -22,7 +30,20 @@ async function cargar() {
   P.equipos = eq.data || []; P.ranking = rk.data || []; P.eventos = ev.data || []; P.votos = vt.data || [];
   const ids = P.equipos.map((e) => e.id);
   P.entregas = ids.length ? (await sb.from('entregas').select('id,equipo_id,tipo,nivel,estado,xp_otorgado,created_at,revisado_en').in('equipo_id', ids)).data || [] : [];
+  sonarCambios();
   render();
+}
+
+// Compara con el estado anterior y hace sonar lo que cambió (niveles abiertos, aprobaciones, votación, cierre)
+function sonarCambios() {
+  const ahora = { abiertos: (P.j.niveles_abiertos || []).join(','), estado: P.j.estado, aprobadas: new Set(P.entregas.filter((e) => e.estado === 'aprobada').map((e) => e.id)), equipos: P.equipos.length };
+  const antes = P.prev; P.prev = ahora;
+  if (!antes) return;
+  if (ahora.estado === 'cerrada' && antes.estado !== 'cerrada') Sonido.fanfarria();
+  else if (ahora.estado === 'votacion' && antes.estado !== 'votacion') Sonido.voto();
+  else if (ahora.abiertos !== antes.abiertos && ahora.abiertos.length > antes.abiertos.length) Sonido.nivel();
+  else if ([...ahora.aprobadas].some((id) => !antes.aprobadas.has(id))) Sonido.aprobado();
+  else if (ahora.equipos > antes.equipos && ahora.estado === 'lobby') Sonido.ok();
 }
 
 function render() {
@@ -37,7 +58,7 @@ function render() {
   else cuerpo = juego();
   root.innerHTML = cab + cuerpo + ticker();
   if (j.estado === 'lobby' && window.QRCode) { const q = $('#qr'); if (q) { q.innerHTML = ''; new QRCode(q, { text: CONFIG.BASE_URL + 'index.html#registrar', width: 150, height: 150 }); } }
-  clearInterval(P.timer); P.timer = iniciarTimer(() => P.j.timer_fin, $('#timer'), { vacio: '--:--', fin: '¡TIEMPO!' });
+  clearInterval(P.timer); P.timer = iniciarTimer(() => P.j.timer_fin, $('#timer'), { vacio: '--:--', fin: '¡TIEMPO!', sonidos: 'todos' });
   revisarCaos();
 }
 
@@ -98,7 +119,7 @@ function revisarCaos() {
   const nuevos = P.eventos.filter((e) => e.tipo === 'caos' && !P.vistos.has(e.id) && new Date(e.created_at) > P.inicio - 5000 && (!e.expira_en || new Date(e.expira_en) > Date.now()));
   P.eventos.forEach((e) => P.vistos.add(e.id));
   if (!nuevos.length) return;
-  const e = nuevos[0]; beep('alerta');
+  const e = nuevos[0]; Sonido.caos();
   const E = e.equipo_id ? P.equipos.find((x) => x.id === e.equipo_id) : null;
   $('#overlay').innerHTML = `<div class="overlay"><div class="card centro" style="border-color:var(--amarillo);max-width:900px"><span class="eyebrow" style="color:var(--amarillo);justify-content:center">Evento caos ${E ? '· solo para ' + esc(E.nombre) : '· todos los equipos'}</span><div class="caos-titulo" style="font-size:clamp(2rem,7vw,5rem)">${esc(e.titulo)}</div><p style="font-size:1.4rem">${esc(e.descripcion || '')}</p><p class="ayuda" style="font-size:1rem">Respondan desde la consola antes de las ${e.expira_en ? fmtHora(e.expira_en) : '—'}.</p></div></div>`;
   setTimeout(() => ($('#overlay').innerHTML = ''), 12000);
